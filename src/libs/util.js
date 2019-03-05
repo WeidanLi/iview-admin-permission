@@ -437,3 +437,21 @@ const hasThisMenuPermission = (routerInfo, allOpCodeArr) => {
     }
   } else return false
 }
+
+export const getRouterWithPermission = (routerWithPermissionList, userOperatorList) => {
+  let res = []
+  const allOpCodeArr = userOperatorList.map(opCodeObj => opCodeObj.operatorCode)
+  forEach(routerWithPermissionList, item => {
+    if (!item.meta || (item.meta && !item.meta.hideInMenu)) {
+      let obj = item
+      if ((hasChild(item) || (item.meta && item.meta.showAlways))) {
+        obj.children = getRouterWithPermission(item.children, userOperatorList)
+      }
+      // 最后一级判断，如果没有孩子并且有权限，就加入
+      if (hasThisMenuPermission(item, allOpCodeArr) && !hasChild(item)) res.push(obj)
+      // 上一层判断，如果有孩子就加入
+      if (hasChild(obj)) res.push(obj)
+    }
+  })
+  return res
+}

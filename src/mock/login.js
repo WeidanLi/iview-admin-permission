@@ -14,11 +14,18 @@ const USER_MAP = {
     token: 'admin',
     avator: 'https://avatars0.githubusercontent.com/u/20942571?s=460&v=4'
   },
-  1: {
-    name: '1',
+  zhangsan: {
+    name: 'zhangsan',
     user_id: '3',
     access: ['super_admin', 'admin'],
-    token: 'admin',
+    token: 'zhangsan',
+    avator: 'https://avatars0.githubusercontent.com/u/20942571?s=460&v=4'
+  },
+  lisi: {
+    name: 'lisi',
+    user_id: '4',
+    access: ['super_admin', 'admin'],
+    token: 'lisi',
     avator: 'https://avatars0.githubusercontent.com/u/20942571?s=460&v=4'
   }
 }

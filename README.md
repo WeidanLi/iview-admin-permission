@@ -62,7 +62,7 @@ export default {
   },
   getters: {
     hasPermission: (state) => (queryOpcode) => {
-      if (!state.operatorList || state.operatorList.length < 1) {
+      if (!state.operatorList || !state.operatorList.length) {
         return false
       }
       return state.operatorList.map(operatInfo => operatInfo.operatorCode).indexOf(queryOpcode) > -1
@@ -170,15 +170,41 @@ const USER_MAP = {
     token: 'admin',
     avator: 'https://avatars0.githubusercontent.com/u/20942571?s=460&v=4'
   },
-  1: {
-    name: '1',
+  zhangsan: {
+    name: 'zhangsan',
     user_id: '3',
     access: ['super_admin', 'admin'],
-    token: 'admin',
+    token: 'zhangsan',
+    avator: 'https://avatars0.githubusercontent.com/u/20942571?s=460&v=4'
+  },
+  lisi: {
+    name: 'lisi',
+    user_id: '4',
+    access: ['super_admin', 'admin'],
+    token: 'lisi',
     avator: 'https://avatars0.githubusercontent.com/u/20942571?s=460&v=4'
   }
 }
 ...
+```
+
+加入权限数据：
+
+```js
+// src/mock/data/permission-data.js
+export const getPermissionCodeList = (userName) => {
+  if (userName === 'zhangsan') {
+    return [{ operatorCode: 'ProductManageEndpoint#list', name: '产品列表' },
+      { operatorCode: 'ProductManageEndpoint#createProduct', name: '产品上传' },
+      { operatorCode: 'ProductManageEndpoint#putawayProduct', name: '产品上架' },
+      { operatorCode: 'ProductManageEndpoint#delistProduct', name: '产品下架' }]
+  } else {
+    return [{ operatorCode: 'ProductManageEndpoint#createProduct', name: '产品上传' },
+      { operatorCode: 'ProductManageEndpoint#delistProduct', name: '产品下架' },
+      { operatorCode: 'ProductManageEndpoint#deleteByUuid', name: '产品删除' }]
+  }
+}
+
 ```
 
 
@@ -337,6 +363,188 @@ mounted () {
 OK，我感觉最难的菜单搞定了。接下来要搞定路由。
 
 ### 动态新增有权限的路由
+
+有了前面的铺垫，我感觉路由要好做很多了。
+
+动态路由有一个调用的函数是：
+
+```js
+router.addRoutes(routes: Array<RouteConfig>)
+```
+
+那么我们需要做的只是，获取有权限的路由，然后加入到 `Vue` 中。
+
+但是这段代码有点问题就是每次进入都会调用一次= =
+
+```js
+// src/view/single-page/home/home.vue
+mounted () {
+    // 需要在这里加载权限信息
+    const userName = this.$store.state.user.userName
+    this.$store.commit('setPermissionList', getPermissionCodeList(userName))
+    const routers = getRouterWithPermission(routersWithPermission, this.$store.state.permission.operatorList)
+    const originRouteNames = this.$router.options.routes.map(r => r.name)
+    // 需要解决重复加入问题
+    if (routers && routers.length && originRouteNames.indexOf(routers[0].name) < 0) {
+        this.$router.addRoutes(routers)
+    }
+}
+```
+
+好了，菜单有了，路由有了，点击测试能否进入。
+
+然后被作者的路由拦截到了-,-
+
+```js
+// src/router/index.js
+const turnTo = (to, access, next) => {
+  next() // 直接过。
+}
+```
+
+### 测试路由和菜单
+
+分别登陆 `zhangsan` 和 `lisi` 从上面的测试权限数据可以看到，`lisi` 是进入不了产品列表的。
+
+#### 登陆lisi
+
+![](./_imgs/lisi.png)
+
+强行进入：
+
+![](./_imgs/lisi-list.png)
+
+OK，正确了，如果没有权限，肯定就没有页面嘛，直接404.
+
+#### 登陆zhangsan
+
+![](./_imgs/zhangsan.png)
+
+### 按钮的控制
+
+页面的跳转搞定了，接下来就要考虑按钮的问题了。那么上面设置的 `Vuex` 的 `hasPermission` 在这里派上用场。关于按钮的绑定，思路来源于 `Vue` 的自定义指令，只需要在主页面注册自定义指令，每次页面加载的时候，加载到指定指令的组件，开始读取这个组件的 `operaCode` 是否在当前登陆的用户中，如果存在，则继续执行，如果不存在，则拿到了节点的 `Vnode` 开始设置我们想要的东西，比如锁定按钮啊，劫持点击事件弹出提示，或者隐藏都可以。
+
+```js
+// src/main.js
+/**
+ * 注册权限控制指令
+ */
+Vue.directive('opcode', {
+  bind: function (el, opcode, vnode, oldVNode) {
+    const requireOpCode = opcode.value
+    // 如果用户没有这个操作Code的权限，那么劫持click事件，赋予弹出无权限弹窗的事件
+    console.log(requireOpCode);
+    if (vnode.componentInstance === undefined || vnode.componentInstance === null) {
+      if (!vnode.context.$store.getters.hasPermission(requireOpCode)) {
+        vnode.data.on.click.fns = function () {
+          Modal.warning({
+            title: '无权限',
+            content: '很抱歉，您没有这项操作的权限'
+          })
+        }
+      }
+    } else {
+      if (!vnode.componentInstance.$store.getters.hasPermission(requireOpCode)) {
+        vnode.componentInstance.$off('click')
+        vnode.componentInstance.$on('click', function () {
+          Modal.warning({
+            title: '无权限',
+            content: '很抱歉，您没有这项操作的权限'
+          })
+        })
+      }
+    }
+  }
+})
+```
+
+常规按钮使用：
+
+```html
+<!-- src/view/product/components/toolbars.vue -->
+<Button v-opcode="'ProductManageEndpoint#createProduct'" type="primary" class="btn" icon="ios-arrow-up" @click="$router.push('/product/add')">上传新商品</Button>
+```
+
+`Render` 函数中使用：
+
+```js
+// src/view/product/product-list.vue
+prodColumns: [
+        {
+          title: '商品名称',
+          key: 'pname',
+          align: 'center',
+          width: 300
+        },
+        {
+          title: '操作',
+          key: 'operator',
+          align: 'center',
+          render: (h, params) => {
+            return h('a', {
+              attrs: {
+                href: 'javascript:;'
+              },
+              on: {
+                click: () => {
+                  this.handleEditProduct(params.row)
+                }
+              },
+              // 在这里注册自定义指令
+              directives: [
+                {
+                  name: 'opcode',
+                  value: 'ProductManageEndpoint#updateByUuid'
+                }
+              ]
+            }, '编辑')
+          }
+        }
+      ],
+```
+
+这种方式即使分页，改变表格数据，也可以被主页面上的判断监听到。
+
+### 演示
+
+回顾一下权限设置数据：
+
+```js
+export const getPermissionCodeList = (userName) => {
+  if (userName === 'zhangsan') {
+    return [{ operatorCode: 'ProductManageEndpoint#list', name: '产品列表' },
+      { operatorCode: 'ProductManageEndpoint#createProduct', name: '产品上传' },
+      { operatorCode: 'ProductManageEndpoint#putawayProduct', name: '产品上架' },
+      { operatorCode: 'ProductManageEndpoint#delistProduct', name: '产品下架' }]
+  } else {
+    return [{ operatorCode: 'ProductManageEndpoint#createProduct', name: '产品上传' },
+      { operatorCode: 'ProductManageEndpoint#delistProduct', name: '产品下架' },
+      { operatorCode: 'ProductManageEndpoint#deleteByUuid', name: '产品删除' }]
+  }
+}
+```
+
+我们知道，用户名为 `zhangsan` 是没有删除产品权限以及编辑产品的，但是前面的都有。而 `lisi` 用户，没有产品列表功能，所以列表都不可以进去。
+
+`zhangsan` 用户界面：
+
+![](./_imgs/zhangsan.gif)
+
+`lisi` 用户界面：
+
+![](./_imgs/lisipage.png)
+
+### 权限编排页面建议
+
+我们知道，经典权限模型是用户、角色、资源的编排。那么我们可以设置一系列的角色，当然记得给自己预留一个流氓角色可以读取所有资源和角色的，利于管理。每个角色可以绑定不同的资源，也可以绑定不同的用户。这样用户一旦登陆，即可读取所有角色中的所有资源操作（记得去重）。
+
+我们公司的绑定界面，通过读取用户所拥有的所有资源，再把 `router` 中绑定的读取出来（当然过滤掉当前绑定用户无权限的），然后通过加载勾选，最后发送请求给服务器做修改。这样设置可以无限极下限，只要赋予用户授权的权限，用户即可一直创建然后绑定他想绑定的。
+
+![](./_imgs/demobind.png)
+
+
+
+
 
 
 

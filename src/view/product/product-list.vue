@@ -1,6 +1,7 @@
 <template>
     <div>
-        <toolbars></toolbars>
+      <toolbars></toolbars>
+      <Table :columns="prodColumns" :data="prodData"></Table>
     </div>
 </template>
 
@@ -15,7 +16,50 @@ import Toolbars from './components/toolbars'
    */
 export default {
   name: 'product-list',
-  components: { Toolbars }
+  components: { Toolbars },
+  data () {
+    return {
+      prodColumns: [
+        {
+          title: '商品名称',
+          key: 'pname',
+          align: 'center',
+          width: 300
+        },
+        {
+          title: '操作',
+          key: 'operator',
+          align: 'center',
+          render: (h, params) => {
+            return h('a', {
+              attrs: {
+                href: 'javascript:;'
+              },
+              on: {
+                click: () => {
+                  this.handleEditProduct(params.row)
+                }
+              },
+              directives: [
+                {
+                  name: 'opcode',
+                  value: 'ProductManageEndpoint#updateByUuid'
+                }
+              ]
+            }, '编辑')
+          }
+        }
+      ],
+      prodData: [{
+        pname: 'iPhone'
+      }]
+    }
+  },
+  methods: {
+    handleEditProduct () {
+      this.$Modal.info({ content: '删除产品' })
+    }
+  }
 }
 </script>
 

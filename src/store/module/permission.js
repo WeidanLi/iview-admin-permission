@@ -13,7 +13,7 @@ export default {
   },
   getters: {
     hasPermission: (state) => (queryOpcode) => {
-      if (!state.operatorList || state.operatorList.length) {
+      if (!state.operatorList || !state.operatorList.length) {
         return false
       }
       return state.operatorList.map(operatInfo => operatInfo.operatorCode).indexOf(queryOpcode) > -1

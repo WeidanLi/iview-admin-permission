@@ -6,7 +6,7 @@
  * @version 1.0
  */
 export const getPermissionCodeList = (userName) => {
-  if (String(userName) === '1') {
+  if (userName === 'zhangsan') {
     return [{ operatorCode: 'ProductManageEndpoint#list', name: '产品列表' },
       { operatorCode: 'ProductManageEndpoint#createProduct', name: '产品上传' },
       { operatorCode: 'ProductManageEndpoint#putawayProduct', name: '产品上架' },

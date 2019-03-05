@@ -20,16 +20,16 @@
     </Row>
     <Row class="tool-btn">
       <Col span="3">
-        <Button v-opcode="'ProductManageEndpoint#createProduct'" type="primary" class="btn" icon="ios-arrow-up" @click="$router.push('/vendor-manage/group')">上传新商品</Button>
+        <Button v-opcode="'ProductManageEndpoint#createProduct'" type="primary" class="btn" icon="ios-arrow-up" @click="$router.push('/product/add')">上传新商品</Button>
       </Col>
       <Col span="2">
-        <Button v-opcode="'ProductManageEndpoint#putawayProduct'" class="btn" icon="ios-play" :disabled="lockBtn" @click="handleProductUp">商品上架</Button>
+        <Button v-opcode="'ProductManageEndpoint#putawayProduct'" class="btn" icon="ios-play" @click="handleProductUp">商品上架</Button>
       </Col>
       <Col span="2">
-        <Button v-opcode="'ProductManageEndpoint#delistProduct'" class="btn" icon="ios-pause" :disabled="lockBtn" @click="handleProductDown">商品下架</Button>
+        <Button v-opcode="'ProductManageEndpoint#delistProduct'" class="btn" icon="ios-pause" @click="handleProductDown">商品下架</Button>
       </Col>
       <Col span="2">
-        <Button v-opcode="'ProductManageEndpoint#deleteByUuid'" type="error" ghost class="btn" :disabled="lockBtn" icon="md-trash" @click="handleProductDel">删除商品</Button>
+        <Button v-opcode="'ProductManageEndpoint#deleteByUuid'" type="error" ghost class="btn" icon="md-trash" @click="handleProductDel">删除商品</Button>
       </Col>
       <Col span="2">
         <Button v-opcode="'ProductImportManageEndpoint#selectImportProductList'" type="primary" ghost class="btn" icon="ios-download" @click="$router.push('/vendor-manage/products-import')">导入商品</Button>
@@ -67,21 +67,17 @@ export default {
   },
   methods: {
     handleStatusChange () {
-      this.search.pname = this.search.pname.trim()
-      this.$emit('handleSearch', this.search)
     },
     handleSearch () {
-      this.search.pname = this.search.pname.trim()
-      this.$emit('handleSearch', this.search)
     },
     handleProductUp () {
-      this.$emit('handleProductUp')
+      this.$Modal.info({ content: '商品上架' })
     },
     handleProductDown () {
-      this.$emit('handleProductDown')
+      this.$Modal.info({ content: '商品下架' })
     },
     handleProductDel () {
-      this.$emit('handleProductDel')
+      this.$Modal.info({ content: '商品删除' })
     }
   }
 }

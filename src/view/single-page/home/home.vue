@@ -34,6 +34,8 @@ import CountTo from '_c/count-to'
 import { ChartPie, ChartBar } from '_c/charts'
 import Example from './example.vue'
 import { getPermissionCodeList } from "../../../mock/data/permission-data";
+import routersWithPermission from '@/router/routersWithPermission'
+import { getRouterWithPermission } from "../../../libs/util";
 export default {
   name: 'home',
   components: {
@@ -75,6 +77,12 @@ export default {
     // 需要在这里加载权限信息
     const userName = this.$store.state.user.userName
     this.$store.commit('setPermissionList', getPermissionCodeList(userName))
+    const routers = getRouterWithPermission(routersWithPermission, this.$store.state.permission.operatorList)
+    const originRouteNames = this.$router.options.routes.map(r => r.name)
+    // 需要解决重复加入问题
+    if (routers && routers.length && originRouteNames.indexOf(routers[0].name) < 0) {
+      this.$router.addRoutes(routers)
+    }
   }
 }
 </script>
